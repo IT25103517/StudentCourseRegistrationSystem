@@ -102,3 +102,40 @@ public class AdminController {
         return "redirect:/admins";
     }
 }
+
+// ─────────────── EDIT LECTURER ───────────────
+    @GetMapping("/lectures/edit/{id}")
+    public String editLecturerForm(@PathVariable Long id, HttpSession session, Model model) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+
+        Lecture lecture = lectureRepository.findById(id).orElse(null);
+        if (lecture == null) return "redirect:/admin/lectures";
+
+        model.addAttribute("lecture", lecture);
+        model.addAttribute("departments", departmentRepository.findAll());
+        return "admin/edit-lecture";
+    }
+
+    @PostMapping("/lectures/edit/{id}")
+    public String updateLecturer(@PathVariable Long id,
+                                 @RequestParam String lecturerName,
+                                 @RequestParam String email,
+                                 @RequestParam String phone,
+                                 @RequestParam Long departmentId,
+                                 HttpSession session,
+                                 RedirectAttributes ra) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+
+        Lecture lecture = lectureRepository.findById(id).orElse(null);
+        if (lecture == null) return "redirect:/admin/lectures";
+
+        lecture.setLecturerName(lecturerName);
+        lecture.setEmail(email);
+        lecture.setPhone(phone);
+
+        departmentRepository.findById(departmentId).ifPresent(lecture::setDepartment);
+        lectureRepository.save(lecture);
+
+        ra.addFlashAttribute("success", "Lecturer updated successfully.");
+        return "redirect:/admin/lectures";
+    }
