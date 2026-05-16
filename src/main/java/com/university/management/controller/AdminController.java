@@ -212,3 +212,39 @@ public class AdminController {
         model.addAttribute("student", student);
         return "admin/edit-student";
     }
+
+    // POST: Process student edit
+    @PostMapping("/students/edit/{username}")
+    public String updateStudent(@PathVariable String username,
+                                @RequestParam String fullName,
+                                @RequestParam String email,
+                                @RequestParam String phone,
+                                @RequestParam(required = false) String newPassword,
+                                @RequestParam(required = false) String confirmPassword,
+                                HttpSession session,
+                                RedirectAttributes ra) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+
+        Student student = studentService.findByUsername(username).orElse(null);
+        if (student == null) return "redirect:/admin/students";
+
+        // Update non-sensitive fields
+        student.setFullName(fullName);
+        student.setEmail(email);
+        student.setPhone(phone);
+
+        // Update password only if provided and matching
+        if (newPassword != null && !newPassword.trim().isEmpty()) {
+            if (!newPassword.equals(confirmPassword)) {
+                ra.addFlashAttribute("error", "Passwords do not match!");
+                return "redirect:/admin/students/edit/" + username;
+            }
+            student.setPassword(newPassword);
+        }
+
+        studentService.updateStudent(student);
+        ra.addFlashAttribute("success", "Student '" + username + "' updated successfully.");
+        return "redirect:/admin/students";
+    }
+
+}
