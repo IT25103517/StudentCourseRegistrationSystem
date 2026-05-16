@@ -63,19 +63,14 @@ public class AdminController {
         return "admin/courses";
     }
 
-    @PostMapping("/add")
-    public String saveAdmin(@Valid @ModelAttribute Admin admin,
-                            BindingResult result, Model model,
-                            HttpSession session, RedirectAttributes redirectAttributes) {
-        if (!isLoggedIn(session)) return "redirect:/login";
-        if (result.hasErrors()) {
-            model.addAttribute("roles", Admin.Role.values());
-            model.addAttribute("isEdit", false);
-            return "admin/form";
-        }
-        adminService.save(admin);
-        redirectAttributes.addFlashAttribute("success", "Admin account created successfully!");
-        return "redirect:/admins";
+    @GetMapping("/courses/add")
+    public String addCourseForm(HttpSession session, Model model) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+        model.addAttribute("course", new Course());
+        model.addAttribute("departments", departmentRepository.findAll());
+        model.addAttribute("lecturers", lectureRepository.findAll());
+        addCommonAttributes(session, model);
+        return "admin/add-course";
     }
 
     @GetMapping("/edit/{id}")
