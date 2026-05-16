@@ -73,14 +73,18 @@ public class AdminController {
         return "admin/add-course";
     }
 
-    @GetMapping("/edit/{id}")
-    public String showEditForm(@PathVariable Long id, Model model, HttpSession session) {
-        if (!isLoggedIn(session)) return "redirect:/login";
-        model.addAttribute("admin", adminService.findById(id)
-                .orElseThrow(() -> new RuntimeException("Admin not found")));
-        model.addAttribute("roles", Admin.Role.values());
-        model.addAttribute("isEdit", true);
-        return "admin/form";
+     @PostMapping("/courses/add")
+    public String saveCourse(@ModelAttribute Course course,
+                             @RequestParam Long departmentId,
+                             @RequestParam(required = false) Long lecturerId,
+                             HttpSession session,
+                             RedirectAttributes ra) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+        departmentRepository.findById(departmentId).ifPresent(course::setDepartment);
+        if (lecturerId != null) lectureRepository.findById(lecturerId).ifPresent(course::setLecturer);
+        courseService.saveCourse(course);
+        ra.addFlashAttribute("success", "Course added successfully!");
+        return "redirect:/admin/courses";
     }
 
     @PostMapping("/edit/{id}")
