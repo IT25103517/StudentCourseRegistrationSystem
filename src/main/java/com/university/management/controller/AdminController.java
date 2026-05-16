@@ -222,3 +222,41 @@ public class AdminController {
         ra.addFlashAttribute("success", "Lecturer updated successfully.");
         return "redirect:/admin/lectures";
     }
+
+   // ─────────────── DEPARTMENTS EDIT ───────────────
+    @GetMapping("/departments/edit/{id}")
+    public String editDeptForm(@PathVariable Long id, HttpSession session, Model model) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+        Department dept = departmentRepository.findById(id).orElse(null);
+        if (dept == null) return "redirect:/admin/departments";
+        model.addAttribute("department", dept);
+        addCommonAttributes(session, model);
+        return "admin/edit-department";
+    }
+
+    @PostMapping("/departments/edit/{id}")
+    public String updateDept(@PathVariable Long id,
+                             @RequestParam String deptName,
+                             @RequestParam String deptCode,
+                             @RequestParam String description,
+                             @RequestParam String headOfDept,
+                             HttpSession session,
+                             RedirectAttributes ra) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+        Department dept = departmentRepository.findById(id).orElse(null);
+        if (dept == null) return "redirect:/admin/departments";
+        dept.setDeptName(deptName);
+        dept.setDeptCode(deptCode);
+        dept.setDescription(description);
+        dept.setHeadOfDept(headOfDept);
+        departmentRepository.save(dept);
+        ra.addFlashAttribute("success", "Department updated successfully.");
+        return "redirect:/admin/departments";
+    }
+
+    @GetMapping("/departments/add")
+    public String addDeptForm(HttpSession session, Model model) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+        addCommonAttributes(session, model);
+        return "admin/add-department";
+    }
