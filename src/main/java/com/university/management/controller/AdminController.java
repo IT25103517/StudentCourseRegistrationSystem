@@ -1,47 +1,66 @@
-package com.university.management.controller;
+package com.abcinstitute.student_management.controller;
 
-import com.university.management.model.Admin;
-import com.university.management.service.AdminService;
+import com.abcinstitute.student_management.model.*;
+import com.abcinstitute.student_management.repository.*;
+import com.abcinstitute.student_management.service.AdminService;
+import com.abcinstitute.student_management.service.CourseService;
+import com.abcinstitute.student_management.service.StudentService;
 import jakarta.servlet.http.HttpSession;
-import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
-import org.springframework.validation.BindingResult;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
+import java.util.List;
+import java.util.Optional;
 /** Managed by: Ramanan */
 @Controller
 @RequestMapping("/admins")
 public class AdminController {
 
+    @Autowired private CourseService courseService;
+    @Autowired private StudentService studentService;
     @Autowired private AdminService adminService;
+    @Autowired private DepartmentRepository departmentRepository;
+    @Autowired private LectureRepository lectureRepository;
+    @Autowired private EnrollmentRepository enrollmentRepository;
 
-    private boolean isLoggedIn(HttpSession session) {
-        return session.getAttribute("loggedInAdmin") != null;
+    // ─── Guard: check admin session ───
+    private boolean isAdmin(HttpSession session) {
+        return "ADMIN".equals(session.getAttribute("userType"));
     }
-
+     // ─── Guard: check super-admin ───
     private boolean isSuperAdmin(HttpSession session) {
         Admin admin = (Admin) session.getAttribute("loggedInAdmin");
-        return admin != null && admin.getRole() == Admin.Role.SUPER_ADMIN;
+        return "SUPER_ADMIN".equals(session.getAttribute("adminRole"));
     }
 
-    @GetMapping
-    public String listAdmins(Model model, HttpSession session) {
-        if (!isLoggedIn(session)) return "redirect:/login";
-        model.addAttribute("admins", adminService.findAll());
-        model.addAttribute("roles", Admin.Role.values());
-        return "admin/list";
+    /** Injects adminRole into the model so all templates can conditionally render the Admins nav link */
+    private void addCommonAttributes(HttpSession session, Model model) {
+        model.addAttribute("adminRole", session.getAttribute("adminRole"));
+        model.addAttribute("adminName", session.getAttribute("loggedInUser"));
     }
 
-    @GetMapping("/add")
-    public String showAddForm(Model model, HttpSession session) {
-        if (!isLoggedIn(session)) return "redirect:/login";
-        model.addAttribute("admin", new Admin());
-        model.addAttribute("roles", Admin.Role.values());
-        model.addAttribute("isEdit", false);
-        return "admin/form";
+    // Admin Dashboard
+    @GetMapping("/dashboard")
+    public String adminDashboard(HttpSession session, Model model) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+        model.addAttribute("totalCourses", courseService.getAllCourses().size());
+        model.addAttribute("totalStudents", studentService.getAllStudents().size());
+        model.addAttribute("totalDepts", departmentRepository.count());
+        model.addAttribute("totalLecturers", lectureRepository.count());
+        addCommonAttributes(session, model);
+        return "admin/admin-dashboard";
+    }
+
+    // ─────────────── COURSES ───────────────
+    @GetMapping("/courses")
+    public String listCourses(HttpSession session, Model model) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+        model.addAttribute("courses", courseService.getAllCourses());
+        addCommonAttributes(session, model);
+        return "admin/courses";
     }
 
     @PostMapping("/add")
