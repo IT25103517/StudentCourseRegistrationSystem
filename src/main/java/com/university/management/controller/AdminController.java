@@ -155,51 +155,41 @@ public class AdminController {
         return "redirect:/admin/lectures";
     }
 
-// GET: Show edit department form
-    @GetMapping("/departments/edit/{id}")
-    public String editDeptForm(@PathVariable Long id, HttpSession session, Model model) {
+// ─────────────── DEPARTMENTS ───────────────
+    @GetMapping("/departments")
+    public String listDepts(HttpSession session, Model model) {
         if (!isAdmin(session)) return "redirect:/admin-login";
-
-        Department dept = departmentRepository.findById(id).orElse(null);
-        if (dept == null) return "redirect:/admin/departments";
-
-        model.addAttribute("department", dept);
-        return "admin/edit-department";
+        model.addAttribute("departments", departmentRepository.findAll());
+        addCommonAttributes(session, model);
+        return "admin/departments";
     }
 
-    /// //////////// EDIT DEPARTMENT BUTTON
-    //////////////// POST: Process department update
-
-    @PostMapping("/departments/edit/{id}")
-    public String updateDept(@PathVariable Long id,
-                             @RequestParam String deptName,
-                             @RequestParam String deptCode,
-                             @RequestParam String description,
-                             @RequestParam String headOfDept,
-                             HttpSession session,
-                             RedirectAttributes ra) {
+    @PostMapping("/departments/add")
+    public String addDept(@RequestParam String deptName,
+                          @RequestParam String deptCode,
+                          @RequestParam String description,
+                          @RequestParam String headOfDept,
+                          HttpSession session) {
         if (!isAdmin(session)) return "redirect:/admin-login";
-
-        Department dept = departmentRepository.findById(id).orElse(null);
-        if (dept == null) return "redirect:/admin/departments";
-
-        dept.setDeptName(deptName);
-        dept.setDeptCode(deptCode);
-        dept.setDescription(description);
-        dept.setHeadOfDept(headOfDept);
-
+        Department dept = new Department(deptName, deptCode, description, headOfDept);
         departmentRepository.save(dept);
-        ra.addFlashAttribute("success", "Department updated successfully.");
         return "redirect:/admin/departments";
     }
 
-    ///// MAPPING...TO ADD DEPARTMENT
-    @GetMapping("/departments/add")
-    public String addDeptForm(HttpSession session) {
+    @GetMapping("/departments/delete/{id}")
+    public String deleteDept(@PathVariable Long id, HttpSession session) {
         if (!isAdmin(session)) return "redirect:/admin-login";
-        return "admin/add-department";   // points to templates/admin/add-department.html
+        departmentRepository.deleteById(id);
+        return "redirect:/admin/departments";
     }
 
+    @GetMapping("/students")
+    public String listStudents(HttpSession session, Model model) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+        model.addAttribute("students", studentService.getAllStudents());
+        addCommonAttributes(session, model);
+        return "admin/students";
+    }
 
     /// // delete student method
     @GetMapping("/students/delete/{username}")
