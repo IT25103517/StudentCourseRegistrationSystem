@@ -260,3 +260,53 @@ public class AdminController {
         addCommonAttributes(session, model);
         return "admin/add-department";
     }
+
+// ─────────────── STUDENTS EDIT / DELETE ───────────────
+    @GetMapping("/students/delete/{username}")
+    public String deleteStudent(@PathVariable String username, HttpSession session, RedirectAttributes ra) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+        boolean deleted = studentService.deleteStudent(username);
+        if (deleted) {
+            ra.addFlashAttribute("success", "Student '" + username + "' has been removed.");
+        } else {
+            ra.addFlashAttribute("error", "Unable to delete student. They may not exist.");
+        }
+        return "redirect:/admin/students";
+    }
+
+    @GetMapping("/students/edit/{username}")
+    public String editStudentForm(@PathVariable String username, HttpSession session, Model model) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+        Student student = studentService.findByUsername(username).orElse(null);
+        if (student == null) return "redirect:/admin/students";
+        model.addAttribute("student", student);
+        addCommonAttributes(session, model);
+        return "admin/edit-student";
+    }
+
+    @PostMapping("/students/edit/{username}")
+    public String updateStudent(@PathVariable String username,
+                                @RequestParam String fullName,
+                                @RequestParam String email,
+                                @RequestParam String phone,
+                                @RequestParam(required = false) String newPassword,
+                                @RequestParam(required = false) String confirmPassword,
+                                HttpSession session,
+                                RedirectAttributes ra) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+        Student student = studentService.findByUsername(username).orElse(null);
+        if (student == null) return "redirect:/admin/students";
+        student.setFullName(fullName);
+        student.setEmail(email);
+        student.setPhone(phone);
+        if (newPassword != null && !newPassword.trim().isEmpty()) {
+            if (!newPassword.equals(confirmPassword)) {
+                ra.addFlashAttribute("error", "Passwords do not match!");
+                return "redirect:/admin/students/edit/" + username;
+            }
+            student.setPassword(newPassword);
+        }
+        studentService.updateStudent(student);
+        ra.addFlashAttribute("success", "Student '" + username + "' updated successfully.");
+        return "redirect:/admin/students";
+    }
