@@ -139,3 +139,15 @@ public class AdminController {
         ra.addFlashAttribute("success", "Lecturer updated successfully.");
         return "redirect:/admin/lectures";
     }
+
+// GET: Show edit department form
+    @GetMapping("/departments/edit/{id}")
+    public String editDeptForm(@PathVariable Long id, HttpSession session, Model model) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+
+        Department dept = departmentRepository.findById(id).orElse(null);
+        if (dept == null) return "redirect:/admin/departments";
+
+        model.addAttribute("department", dept);
+        return "admin/edit-department";
+    }
