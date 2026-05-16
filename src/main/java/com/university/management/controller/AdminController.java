@@ -151,3 +151,29 @@ public class AdminController {
         model.addAttribute("department", dept);
         return "admin/edit-department";
     }
+
+    /// //////////// EDIT DEPARTMENT BUTTON
+    //////////////// POST: Process department update
+
+    @PostMapping("/departments/edit/{id}")
+    public String updateDept(@PathVariable Long id,
+                             @RequestParam String deptName,
+                             @RequestParam String deptCode,
+                             @RequestParam String description,
+                             @RequestParam String headOfDept,
+                             HttpSession session,
+                             RedirectAttributes ra) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+
+        Department dept = departmentRepository.findById(id).orElse(null);
+        if (dept == null) return "redirect:/admin/departments";
+
+        dept.setDeptName(deptName);
+        dept.setDeptCode(deptCode);
+        dept.setDescription(description);
+        dept.setHeadOfDept(headOfDept);
+
+        departmentRepository.save(dept);
+        ra.addFlashAttribute("success", "Department updated successfully.");
+        return "redirect:/admin/departments";
+    }
