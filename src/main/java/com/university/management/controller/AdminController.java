@@ -199,3 +199,16 @@ public class AdminController {
         }
         return "redirect:/admin/students";
     }
+
+   ////////// EDIT STUDENT METHODS
+    // GET: Show edit student form
+    @GetMapping("/students/edit/{username}")
+    public String editStudentForm(@PathVariable String username, HttpSession session, Model model) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+
+        Student student = studentService.findByUsername(username).orElse(null);
+        if (student == null) return "redirect:/admin/students";
+
+        model.addAttribute("student", student);
+        return "admin/edit-student";
+    }
