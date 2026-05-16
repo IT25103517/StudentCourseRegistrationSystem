@@ -87,39 +87,38 @@ public class AdminController {
         return "redirect:/admin/courses";
     }
 
-    @PostMapping("/edit/{id}")
-    public String updateAdmin(@PathVariable Long id,
-                              @Valid @ModelAttribute Admin admin,
-                              BindingResult result, Model model,
-                              HttpSession session, RedirectAttributes redirectAttributes) {
-        if (!isLoggedIn(session)) return "redirect:/login";
-        if (result.hasErrors()) {
-            model.addAttribute("roles", Admin.Role.values());
-            model.addAttribute("isEdit", true);
-            return "admin/form";
-        }
-        admin.setId(id);
-        adminService.save(admin);
-        redirectAttributes.addFlashAttribute("success", "Admin updated successfully!");
-        return "redirect:/admins";
+    @GetMapping("/courses/edit/{id}")
+    public String editCourseForm(@PathVariable Long id, HttpSession session, Model model) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+        Optional<Course> course = courseService.getCourseById(id);
+        if (course.isEmpty()) return "redirect:/admin/courses";
+        model.addAttribute("course", course.get());
+        model.addAttribute("departments", departmentRepository.findAll());
+        model.addAttribute("lecturers", lectureRepository.findAll());
+        addCommonAttributes(session, model);
+        return "admin/edit-course";
+    }
+    @PostMapping("/courses/edit/{id}")
+    public String updateCourse(@PathVariable Long id,
+                               @ModelAttribute Course course,
+                               @RequestParam Long departmentId,
+                               @RequestParam(required = false) Long lecturerId,
+                               HttpSession session) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+        course.setId(id);
+        departmentRepository.findById(departmentId).ifPresent(course::setDepartment);
+        if (lecturerId != null) lectureRepository.findById(lecturerId).ifPresent(course::setLecturer);
+        courseService.updateCourse(course);
+        return "redirect:/admin/courses";
     }
 
-    @GetMapping("/delete/{id}")
-    public String deleteAdmin(@PathVariable Long id, HttpSession session,
-                              RedirectAttributes redirectAttributes) {
-        if (!isSuperAdmin(session)) {
-            redirectAttributes.addFlashAttribute("error", "Only Super Admin can delete admin accounts!");
-            return "redirect:/admins";
-        }
-        try {
-            adminService.deleteById(id);
-            redirectAttributes.addFlashAttribute("success", "Admin deleted!");
-        } catch (Exception e) {
-            redirectAttributes.addFlashAttribute("error", "Error deleting admin!");
-        }
-        return "redirect:/admins";
+    @GetMapping("/courses/delete/{id}")
+    public String deleteCourse(@PathVariable Long id, HttpSession session) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+        courseService.deleteCourse(id);
+        return "redirect:/admin/courses";
     }
-}
+
 
 // ─────────────── EDIT LECTURER ───────────────
     @GetMapping("/lectures/edit/{id}")
