@@ -177,3 +177,25 @@ public class AdminController {
         ra.addFlashAttribute("success", "Department updated successfully.");
         return "redirect:/admin/departments";
     }
+
+    ///// MAPPING...TO ADD DEPARTMENT
+    @GetMapping("/departments/add")
+    public String addDeptForm(HttpSession session) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+        return "admin/add-department";   // points to templates/admin/add-department.html
+    }
+
+
+    /// // delete student method
+    @GetMapping("/students/delete/{username}")
+    public String deleteStudent(@PathVariable String username, HttpSession session, RedirectAttributes ra) {
+        if (!isAdmin(session)) return "redirect:/admin-login";
+
+        boolean deleted = studentService.deleteStudent(username);
+        if (deleted) {
+            ra.addFlashAttribute("success", "Student '" + username + "' has been removed.");
+        } else {
+            ra.addFlashAttribute("error", "Unable to delete student. They may not exist.");
+        }
+        return "redirect:/admin/students";
+    }
