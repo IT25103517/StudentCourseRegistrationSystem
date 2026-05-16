@@ -191,65 +191,34 @@ public class AdminController {
         return "admin/students";
     }
 
-    /// // delete student method
-    @GetMapping("/students/delete/{username}")
-    public String deleteStudent(@PathVariable String username, HttpSession session, RedirectAttributes ra) {
+       // ─────────────── EDIT LECTURER ───────────────
+    @GetMapping("/lectures/edit/{id}")
+    public String editLecturerForm(@PathVariable Long id, HttpSession session, Model model) {
         if (!isAdmin(session)) return "redirect:/admin-login";
-
-        boolean deleted = studentService.deleteStudent(username);
-        if (deleted) {
-            ra.addFlashAttribute("success", "Student '" + username + "' has been removed.");
-        } else {
-            ra.addFlashAttribute("error", "Unable to delete student. They may not exist.");
-        }
-        return "redirect:/admin/students";
+        Lecture lecture = lectureRepository.findById(id).orElse(null);
+        if (lecture == null) return "redirect:/admin/lectures";
+        model.addAttribute("lecture", lecture);
+        model.addAttribute("departments", departmentRepository.findAll());
+        addCommonAttributes(session, model);
+        return "admin/edit-lecture";
     }
 
-   ////////// EDIT STUDENT METHODS
-    // GET: Show edit student form
-    @GetMapping("/students/edit/{username}")
-    public String editStudentForm(@PathVariable String username, HttpSession session, Model model) {
+    @PostMapping("/lectures/edit/{id}")
+    public String updateLecturer(@PathVariable Long id,
+                                 @RequestParam String lecturerName,
+                                 @RequestParam String email,
+                                 @RequestParam String phone,
+                                 @RequestParam Long departmentId,
+                                 HttpSession session,
+                                 RedirectAttributes ra) {
         if (!isAdmin(session)) return "redirect:/admin-login";
-
-        Student student = studentService.findByUsername(username).orElse(null);
-        if (student == null) return "redirect:/admin/students";
-
-        model.addAttribute("student", student);
-        return "admin/edit-student";
+        Lecture lecture = lectureRepository.findById(id).orElse(null);
+        if (lecture == null) return "redirect:/admin/lectures";
+        lecture.setLecturerName(lecturerName);
+        lecture.setEmail(email);
+        lecture.setPhone(phone);
+        departmentRepository.findById(departmentId).ifPresent(lecture::setDepartment);
+        lectureRepository.save(lecture);
+        ra.addFlashAttribute("success", "Lecturer updated successfully.");
+        return "redirect:/admin/lectures";
     }
-
-    // POST: Process student edit
-    @PostMapping("/students/edit/{username}")
-    public String updateStudent(@PathVariable String username,
-                                @RequestParam String fullName,
-                                @RequestParam String email,
-                                @RequestParam String phone,
-                                @RequestParam(required = false) String newPassword,
-                                @RequestParam(required = false) String confirmPassword,
-                                HttpSession session,
-                                RedirectAttributes ra) {
-        if (!isAdmin(session)) return "redirect:/admin-login";
-
-        Student student = studentService.findByUsername(username).orElse(null);
-        if (student == null) return "redirect:/admin/students";
-
-        // Update non-sensitive fields
-        student.setFullName(fullName);
-        student.setEmail(email);
-        student.setPhone(phone);
-
-        // Update password only if provided and matching
-        if (newPassword != null && !newPassword.trim().isEmpty()) {
-            if (!newPassword.equals(confirmPassword)) {
-                ra.addFlashAttribute("error", "Passwords do not match!");
-                return "redirect:/admin/students/edit/" + username;
-            }
-            student.setPassword(newPassword);
-        }
-
-        studentService.updateStudent(student);
-        ra.addFlashAttribute("success", "Student '" + username + "' updated successfully.");
-        return "redirect:/admin/students";
-    }
-
-}
